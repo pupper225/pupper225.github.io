@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+</head>
+<body style="overflow: hidden; background-color:black;">
+    <canvas id="myCanvas"></canvas>
+    <script>
+        // let lastTime = performance.now();
+        let fps = 0;
+        let isShooting = false;
+        let cooldown = false;
+        let canvas = document.getElementById("myCanvas");
+        let bulletDmg = 10;
+        canvas.width = window.innerWidth;
+        canvas.height=  window.innerHeight;
+        let c = canvas.getContext("2d");
+
+        let cursorPosX;
+        let cursorPosY;
+
+        //player
+        let cCached = document.createElement("canvas");
+        let c2 = cCached.getContext("2d");
+        cCached.width = 90;
+        cCached.height = 90;
+
+        //bullet
+        let cCached2 = document.createElement("canvas");
+        let c3 = cCached2.getContext("2d");
+        cCached2.width = 30;
+        cCached2.height = 30;
+
+        //enemies
+        let cCached3 = document.createElement("canvas");
+        let c4 = cCached3.getContext("2d");
+        cCached3.width = 200;
+        cCached3.height = 200;
+
+        //enemies(damaged)
+        let cCached4 = document.createElement("canvas");
+        let c5 = cCached4.getContext("2d");
+        cCached4.width = 200;
+        cCached4.height = 200;
+
+        //draw player
+        c2.beginPath();
+        c2.arc(cCached.width/2, cCached.width/2, 45, 0 , 2 * Math.PI);
+        c2.fillStyle = '#ffd640';
+        c2.fill();
+        c2.closePath();
+
+        //draw bullet
+        c3.beginPath();
+        c3.arc(cCached2.width/2, cCached2.width/2, 15, 0, 2 * Math.PI);
+        c3.fillStyle = '#ffd640';
+        c3.fill();
+        c3.closePath();
+
+        //draw enemy
+        c4.beginPath();
+        c4.arc(cCached3.width/2, cCached3.width/2, 100, 0, 2 * Math.PI);
+        c4.fillStyle = '#b0b0b0';
+        c4.fill();
+        c4.closePath();
+
+        //draw enemy (damaged)
+        c5.beginPath();
+        c5.arc(cCached3.width/2, cCached3.width/2, 100, 0, 2 * Math.PI);
+        c5.fillStyle = 'red';
+        c5.fill();
+        c5.closePath();
+
+        let playerPos = { x: canvas.width/2 , y: canvas.height/2 };
+        let vel = 6;
+        let bulletVel = 10;
+
+        let keys = [];
+        let bullets = [];
+        let enemies = [];
+
+        for(let i = 0; i < 1; i ++){
+            let obj = {};
+            obj = 
+            { 
+                x:Math.floor(Math.random()* window.innerWidth),
+                y:Math.floor(Math.random()*window.innerHeight),
+                damaged: false,
+                health: 100
+            }
+            enemies.push(obj);
+        }
+
+        function shoot(playerPos,bulletPos){
+            cooldown = true;
+            let yDiff = bulletPos.y - (playerPos.y+45);
+            let xDiff = bulletPos.x - (playerPos.x+45);
+            let distance = Math.sqrt(xDiff**2 + yDiff**2);
+            bullets.push({ x: playerPos.x+45, y: playerPos.y+45, 
+                vector:[xDiff/distance, yDiff/distance], totDist:0 });
+        }
+
+        function track(playerPos, enemyPos){
+            let xDiff = playerPos.x - enemyPos.x;
+            let yDiff = playerPos.y - enemyPos.y;
+            let distance = Math.sqrt(xDiff**2 + yDiff**2);
+            return [xDiff/distance, yDiff/distance];
+        }
+
+        function checkHit(bulletPos, enemyPos){
+            let distance  = Math.sqrt(((enemyPos.x + 100) - (bulletPos.x))**2+((enemyPos.y + 100) - (bulletPos.y))**2); 
+            // 115 is radius of enemy + radius of bullet
+            if(distance < 115)return true;
+            return false;
+        }
+
+        document.addEventListener("mousedown",()=>{
+            vel = 2;
+            isShooting = true;
+            let rect = canvas.getBoundingClientRect();
+            cursorPosX = event.clientX - rect.left;
+            cursorPosY = event.clientY - rect.top;
+        });
+
+        document.addEventListener("mouseup",()=>{
+            isShooting = false;
+            vel = 6;
+        });
+
+        document.addEventListener("mousemove",(event)=>{
+            let rect = canvas.getBoundingClientRect();
+            cursorPosX = event.clientX - rect.left;
+            cursorPosY = event.clientY - rect.top;
+        });
+
+        document.addEventListener("keydown", (event)=>{
+            keys[event.keyCode] = true;
+        })
+
+        document.addEventListener("keyup",(event)=>{
+            keys[event.keyCode] = false;
+        })
+
+        setInterval(()=>{
+            if(cooldown) cooldown = false;
+        },100)
+
+        setInterval(()=>{
+            let obj = {};
+            obj = 
+            { 
+                x:Math.floor(Math.random()* window.innerWidth),
+                y:Math.floor(Math.random()*window.innerHeight),
+                damaged: false,
+                health: 100
+            }
+            enemies.push(obj);
+        },1500)
+
+        function main(){
+            // const now = performance.now();
+            // console.log(now, lastTime);
+            // const elapsed = now - lastTime;
+            // lastTime = now;
+
+            // fps = 1000/elapsed;
+
+            c.clearRect(0,0,canvas.width, canvas.height);
+
+            // c.fillStyle = 'white';
+            // c.font = '20px Arial';
+            // c.fillText(`FPS: ${Math.floor(fps)}`, 10, 30);
+
+            let lastPos = JSON.parse(JSON.stringify(playerPos));
+            if(keys[65]){
+                playerPos.x -= 1;
+            }   
+            if(keys[87]){
+                playerPos.y -= 1;
+            }
+            if(keys[68]){
+                playerPos.x += 1;
+            }
+            if (keys[83]){
+                playerPos.y += 1;
+            }
+            
+            let yDiff = playerPos.y - lastPos.y;
+            let xDiff = playerPos.x - lastPos.x;
+
+            if(xDiff != 0 || yDiff != 0){
+                let distance = Math.sqrt(yDiff**2 + xDiff**2);
+                playerPos.x += (xDiff/distance) * vel;
+                playerPos.y += (yDiff/distance) * vel;
+            }
+
+            if(isShooting && !cooldown){
+                //u see nothing.
+                shoot(playerPos,{ x:cursorPosX, y:cursorPosY, vector:[] });
+            }
+
+            for (let i = 0; i < enemies.length; i++){
+                if(enemies[i].damaged){
+                    c.drawImage(c5.canvas, enemies[i].x, enemies[i].y);
+                    enemies[i].damaged = false;
+                }
+                else{
+                    c.drawImage(c4.canvas, enemies[i].x, enemies[i].y);
+                }
+                let move = track(playerPos, enemies[i]);
+                enemies[i].x += move[0];
+                enemies[i].y += move[1];
+            }
+
+            for(let i = 0; i < bullets.length; i++){
+                bullets[i].x += bullets[i].vector[0] * bulletVel;
+                bullets[i].y += bullets[i].vector[1] * bulletVel;
+                c.drawImage(c3.canvas, bullets[i].x-15, bullets[i].y-15);
+                
+                bullets[i].totDist += Math.sqrt(bullets[i].vector[0]**2 + bullets[i].vector[1]**2);
+                for(let j= 0; j < enemies.length; j++){
+                    if(checkHit(bullets[i], enemies[j])){
+                        let enemyHurtAudio = new Audio('enemyoof.mp3');
+                        enemyHurtAudio.play();
+                        enemies[j].health -= bulletDmg;
+                        enemies[j].damaged = true;
+                        if(enemies[j].health <= 0){ 
+                            let enemyDeath = new Audio('yodaDeath.m4a');
+                            enemyDeath.play(0,5);
+                            enemies.splice(j,1)
+                        };
+                        bullets.splice(i,1);
+                        break;
+                    }
+                }
+                if( bullets[i] && bullets[i].totDist > 85){
+                    bullets.splice(i,1);
+                }
+            }   
+            c.drawImage(c2.canvas,playerPos.x, playerPos.y);
+            requestAnimationFrame(main);
+            // setTimeout(main,50);
+        }
+        main();
+
+    </script>
+    
+</body>
+</html>
